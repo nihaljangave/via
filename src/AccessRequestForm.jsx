@@ -27,11 +27,7 @@ const AccessRequestForm = ({ onBack }) => {
     // Protocol specific
     const [protocolNumber, setProtocolNumber] = useState(''); // Keep for dropdown value
     const [selectedProtocols, setSelectedProtocols] = useState([]);
-    const [createNewProtocol, setCreateNewProtocol] = useState(false);
-    const [newProtocolName, setNewProtocolName] = useState('');
-    const [sponsorName, setSponsorName] = useState('');
-    const [createNewSponsor, setCreateNewSponsor] = useState(false);
-    const [newSponsorName, setNewSponsorName] = useState('');
+
 
     const [role, setRole] = useState('');
     const [hasDtlCpm, setHasDtlCpm] = useState('');
@@ -64,7 +60,6 @@ const AccessRequestForm = ({ onBack }) => {
         if (requestType === 'Revoke Access') {
             setCreateNewSa(false);
             setCreateNewSystem(false);
-            setCreateNewProtocol(false);
             setExternalData(''); // Hidden for revoke? Prompt says "Select Access Request Type = Grant Access (should not show on selection of Revoke)" for External Data Access
         }
     }, [requestType]);
@@ -100,11 +95,6 @@ const AccessRequestForm = ({ onBack }) => {
         setNewSystemName('');
         setProtocolNumber('');
         setSelectedProtocols([]);
-        setCreateNewProtocol(false);
-        setNewProtocolName('');
-        setSponsorName('');
-        setCreateNewSponsor(false);
-        setNewSponsorName('');
         setRole('');
         setHasDtlCpm('');
         setDtlCpmEmail('');
@@ -139,7 +129,6 @@ const AccessRequestForm = ({ onBack }) => {
             setSelectedProtocols([...selectedProtocols, value]);
         }
         setProtocolNumber(''); // Reset dropdown
-        if (value) setCreateNewProtocol(false);
     };
 
     const removeProtocol = (proto) => {
@@ -171,19 +160,19 @@ const AccessRequestForm = ({ onBack }) => {
         }
 
         if ((!allStudies && accessFor === 'User' && requestType === 'Grant Access') || (allStudies && requestType === 'Grant Access' && studyAccessType === 'no study access')) {
-            if (!role) missingFields.push('Provide Role');
+            if (!role) missingFields.push('Select Role');
         }
 
-        if (!allStudies && accessFor !== 'SA User' && requestType === 'Grant Access' && (protocolOrSystem === 'Protocol' || protocolOrSystem === 'System')) {
+        if (!allStudies && requestType === 'Grant Access' && (protocolOrSystem === 'Protocol' || protocolOrSystem === 'System')) {
             if (!externalData) missingFields.push('External Data Access');
         }
 
         if (!allStudies && (requestType === 'Grant Access' || requestType === 'Revoke Access') && protocolOrSystem === 'System') {
-            if (!createNewSystem && selectedSystems.length === 0) missingFields.push('Provide System Number');
+            if (!createNewSystem && selectedSystems.length === 0) missingFields.push('Select System Number');
         }
 
         if (!allStudies && (requestType === 'Grant Access' || requestType === 'Revoke Access') && protocolOrSystem === 'Protocol') {
-            if (!createNewProtocol && selectedProtocols.length === 0) missingFields.push('Provide Protocol Number');
+            if (selectedProtocols.length === 0) missingFields.push('Select Protocol Number');
         }
 
         if (!allStudies && accessFor === 'User' && requestType === 'Grant Access' && (protocolOrSystem === 'Protocol' || protocolOrSystem === 'System')) {
@@ -191,7 +180,7 @@ const AccessRequestForm = ({ onBack }) => {
         }
 
         if (!allStudies && accessFor === 'SA User' && requestType === 'Grant Access' && protocolOrSystem === 'System') {
-            if (!saUserRole) missingFields.push('Provide SA User Role');
+            if (!saUserRole) missingFields.push('Select SA User Role');
         }
 
         if (missingFields.length > 0) {
@@ -231,7 +220,7 @@ const AccessRequestForm = ({ onBack }) => {
                 <select value={accessFor} onChange={(e) => setAccessFor(e.target.value)}>
                     <option value="">-- Select --</option>
                     <option value="User">User</option>
-                    <option value="SA User">SA User (Service Account)</option>
+                    <option value="SA User">Service Account</option>
                 </select>
 
 
@@ -396,7 +385,7 @@ const AccessRequestForm = ({ onBack }) => {
                     {/* Grant Access + All Studies + No Study Access -> Reuse Provide Role */}
                     {allStudies && requestType === 'Grant Access' && studyAccessType === 'no study access' && (
                         <div className="form-group">
-                            <label>Provide Role <span style={{ color: 'red' }}>*</span></label>
+                            <label>Select Role <span style={{ color: 'red' }}>*</span></label>
                             <select value={role} onChange={(e) => setRole(e.target.value)}>
                                 <option value="">-- Select --</option>
                                 <option value="CDAS Business Admin">CDAS Business Admin</option>
@@ -417,28 +406,36 @@ const AccessRequestForm = ({ onBack }) => {
                         </div>
                     )}
 
-                    {/* 5. External Data Access - Only for User (not SA) and Grant Access - Not for All Studies */}
-                    {!allStudies && accessFor !== 'SA User' && requestType === 'Grant Access' && (protocolOrSystem === 'Protocol' || protocolOrSystem === 'System') && (
+                    {/* 5. External Data Access - For User and SA User, Grant Access, Protocol or System - Not for All Studies */}
+                    {!allStudies && requestType === 'Grant Access' && (protocolOrSystem === 'Protocol' || protocolOrSystem === 'System') && (
                         <div className="form-group">
                             <label>External Data Access <span style={{ color: 'red' }}>*</span></label>
                             <select value={externalData} onChange={(e) => setExternalData(e.target.value)}>
                                 <option value="">-- Select --</option>
-                                <option value="yes">yes</option>
-                                <option value="no">no</option>
+                                {accessFor === 'User' && (
+                                    <>
+                                        <option value="Read only">Read only</option>
+                                        <option value="No access">No access</option>
+                                        <option value="Not Applicable">Not Applicable</option>
+                                    </>
+                                )}
+                                {accessFor === 'SA User' && protocolOrSystem === 'Protocol' && (
+                                    <>
+                                        <option value="Read only">Read only</option>
+                                        <option value="No access">No access</option>
+                                    </>
+                                )}
+                                {accessFor === 'SA User' && protocolOrSystem === 'System' && (
+                                    <>
+                                        <option value="Read only">Read only</option>
+                                        <option value="Read Write">Read Write</option>
+                                    </>
+                                )}
                             </select>
 
                             {externalData === 'yes' && (
                                 <div className="nested-section">
-                                    <div className="checkbox-group">
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                checked={l2DataAccess}
-                                                onChange={(e) => setL2DataAccess(e.target.checked)}
-                                            />
-                                            Requires L2 data access (i.e, direct data access from machine) (Note : if already have L2 access, leave it uncheck)
-                                        </label>
-                                    </div>
+
 
                                     {l2DataAccess && (
                                         <>
@@ -460,7 +457,7 @@ const AccessRequestForm = ({ onBack }) => {
                     {/* 6. Provide System Number */}
                     {!allStudies && (requestType === 'Grant Access' || requestType === 'Revoke Access') && protocolOrSystem === 'System' && (
                         <div className="form-group">
-                            <label>Provide System Number <span style={{ color: 'red' }}>*</span></label>
+                            <label>Select System Number <span style={{ color: 'red' }}>*</span></label>
                             {!createNewSystem && (
                                 <>
                                     <select value={systemNumber} onChange={handleSystemChange}>
@@ -520,114 +517,33 @@ const AccessRequestForm = ({ onBack }) => {
                     {/* 6. Provide Protocol Number */}
                     {!allStudies && (requestType === 'Grant Access' || requestType === 'Revoke Access') && protocolOrSystem === 'Protocol' && (
                         <div className="form-group">
-                            <label>Provide Protocol Number <span style={{ color: 'red' }}>*</span></label>
-                            {!createNewProtocol && (
-                                <>
-                                    <select value={protocolNumber} onChange={handleProtocolChange}>
-                                        <option value="">-- Select --</option>
-                                        <option value="01-02-TL-013-002">01-02-TL-013-002</option>
-                                        <option value="01-02-TL-013-003">01-02-TL-013-003</option>
-                                        <option value="01-02-TL-070-002">01-02-TL-070-002</option>
-                                        <option value="01-02-TL-242-002">01-02-TL-242-002</option>
-                                        <option value="01-02-TL-370-007">01-02-TL-370-007</option>
-                                        <option value="01-02-TL-559-013">01-02-TL-559-013</option>
-                                    </select>
-                                    <div className="chip-container">
-                                        {selectedProtocols.map(proto => (
-                                            <div key={proto} className="chip">
-                                                {proto}
-                                                <span className="chip-remove" onClick={() => removeProtocol(proto)}>×</span>
-                                            </div>
-                                        ))}
+                            <label>Select Protocol Number <span style={{ color: 'red' }}>*</span></label>
+                            <select value={protocolNumber} onChange={handleProtocolChange}>
+                                <option value="">-- Select --</option>
+                                <option value="01-02-TL-013-002">01-02-TL-013-002</option>
+                                <option value="01-02-TL-013-003">01-02-TL-013-003</option>
+                                <option value="01-02-TL-070-002">01-02-TL-070-002</option>
+                                <option value="01-02-TL-242-002">01-02-TL-242-002</option>
+                                <option value="01-02-TL-370-007">01-02-TL-370-007</option>
+                                <option value="01-02-TL-559-013">01-02-TL-559-013</option>
+                            </select>
+                            <div className="chip-container">
+                                {selectedProtocols.map(proto => (
+                                    <div key={proto} className="chip">
+                                        {proto}
+                                        <span className="chip-remove" onClick={() => removeProtocol(proto)}>×</span>
                                     </div>
-                                </>
-                            )}
+                                ))}
+                            </div>
 
-                            {requestType !== 'Revoke Access' && selectedProtocols.length === 0 && (
-                                <div className="checkbox-group">
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            checked={createNewProtocol}
-                                            onChange={(e) => {
-                                                setCreateNewProtocol(e.target.checked);
-                                                if (e.target.checked) {
-                                                    setProtocolNumber('');
-                                                    setSelectedProtocols([]);
-                                                }
-                                            }}
-                                        />
-                                        Create New - NON MDM Study
-                                    </label>
-                                </div>
-                            )}
 
-                            {createNewProtocol && (
-                                <div className="nested-section">
-                                    <input
-                                        type="text"
-                                        value={newProtocolName}
-                                        onChange={(e) => setNewProtocolName(e.target.value)}
-                                        placeholder="New Protocol name to onboard on CDAS Platform"
-                                    />
-
-                                    <div className="form-group">
-                                        <label>Sponsor name</label>
-                                        {!createNewSponsor && (
-                                            <select value={sponsorName} onChange={(e) => {
-                                                setSponsorName(e.target.value);
-                                                if (e.target.value) setCreateNewSponsor(false);
-                                            }}>
-                                                <option value="">-- Select --</option>
-                                                <option value="MARINUS  [US]">MARINUS  [US]</option>
-                                                <option value="TENACIA  [CN]">TENACIA  [CN]</option>
-                                                <option value="LUNDBECK  [ES]">LUNDBECK  [ES]</option>
-                                                <option value="GLAXOSMITHKLINE  [BE]">GLAXOSMITHKLINE  [BE]</option>
-                                                <option value="Shire Pharmaceuticals">Shire Pharmaceuticals</option>
-                                                <option value="Biogen-US">Biogen-US</option>
-                                                <option value="Biogen Idec">Biogen Idec</option>
-                                                <option value="BIOGEN HQ  [US]">BIOGEN HQ  [US]</option>
-                                                <option value="GlaxoSmithKline Research and Development">GlaxoSmithKline Research and Development</option>
-                                                <option value="MERCK & CO  [US]">MERCK & CO  [US]</option>
-                                                <option value="BOEHRINGER INGELHEIM">BOEHRINGER INGELHEIM</option>
-                                                <option value="Abbott Vascular">Abbott Vascular</option>
-                                            </select>
-                                        )}
-
-                                        {!sponsorName && (
-                                            <div className="checkbox-group">
-                                                <label>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={createNewSponsor}
-                                                        onChange={(e) => {
-                                                            setCreateNewSponsor(e.target.checked);
-                                                            if (e.target.checked) setSponsorName('');
-                                                        }}
-                                                    />
-                                                    Create New - Sponsor for NON MDM Study Only.
-                                                </label>
-                                            </div>
-                                        )}
-
-                                        {createNewSponsor && (
-                                            <input
-                                                type="text"
-                                                value={newSponsorName}
-                                                onChange={(e) => setNewSponsorName(e.target.value)}
-                                                placeholder="Enter Sponsor Name"
-                                            />
-                                        )}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     )}
 
                     {/* 7. Provide Role (For User only) - Not for All Studies (handled separately) */}
                     {!allStudies && accessFor === 'User' && requestType === 'Grant Access' && (protocolOrSystem === 'Protocol' || protocolOrSystem === 'System') && (
                         <div className="form-group">
-                            <label>Provide Role <span style={{ color: 'red' }}>*</span></label>
+                            <label>Select Role <span style={{ color: 'red' }}>*</span></label>
                             <select value={role} onChange={(e) => setRole(e.target.value)}>
                                 <option value="">-- Select --</option>
                                 <option value="CDAS Business Admin">CDAS Business Admin</option>
@@ -664,7 +580,7 @@ const AccessRequestForm = ({ onBack }) => {
                     {/* 7. Provide SA User Role (For SA User, Grant Access, System) */}
                     {!allStudies && accessFor === 'SA User' && requestType === 'Grant Access' && protocolOrSystem === 'System' && (
                         <div className="form-group">
-                            <label>Provide SA User Role <span style={{ color: 'red' }}>*</span></label>
+                            <label>Select SA User Role <span style={{ color: 'red' }}>*</span></label>
                             <select value={saUserRole} onChange={(e) => setSaUserRole(e.target.value)}>
                                 <option value="">-- Select --</option>
                                 <option value="Read-Only Access Role">Read-Only Access Role</option>
